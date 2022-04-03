@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 num_classes = 7 #angry, disgust, fear, happy, sad, surprise, neutral
 batch_size = 256
 steps_per_epoch = 112
-epochs = 2
+epochs = 9
 emotions = ['angry', 'disgust', 'fear', 'happy', 'sad', 'surprise', 'neutral']
 
 def plot_emotion_prediction(pred):
@@ -56,9 +56,20 @@ def split_data():
 
 def create_model():
   inputs = Input(shape=(48, 48, 1, ))
-  conv = Conv2D(filters=64, kernel_size=(5,5), activation='relu')(inputs)
-  maxpool = MaxPooling2D(pool_size=(5,5), strides=(2,2))(conv)
-  flatten = Flatten()(maxpool)
+  # INSERT LAYERS HERE
+  conv = Conv2D(filters=32, kernel_size=(5,5), activation='relu')(inputs)
+  conv = Conv2D(filters=32, kernel_size=(5,5), activation='relu')(conv)
+  pool = MaxPooling2D(pool_size=(2,2))(conv)
+  dropout = Dropout(0.2)(pool)
+  conv = Conv2D(filters=64, kernel_size=(3,3), activation='relu')(dropout)
+  conv = Conv2D(filters=64, kernel_size=(3,3), activation='relu')(conv)
+  pool = MaxPooling2D(pool_size=(2,2))(conv)
+  dropout = Dropout(0.2)(pool)
+  conv = Conv2D(filters=128, kernel_size=(3,3), activation='relu')(dropout)
+  conv = Conv2D(filters=128, kernel_size=(3,3), activation='relu')(conv)
+  pool = MaxPooling2D(pool_size=(2,2))(conv)
+  dropout = Dropout(0.4)(pool)
+  flatten = Flatten()(dropout) # need to flatten into 1-D array before dense
   dense = Dense(1024, activation='relu')(flatten)
   pred = Dense(7, activation='softmax')(dense)
   return Model(inputs=inputs, outputs=pred)
@@ -73,10 +84,10 @@ def cnn():
   # C. 3) TRAIN AND SAVE MODEL
   model.fit(datagen.flow(x_train, y_train, batch_size=batch_size), epochs=epochs, steps_per_epoch=steps_per_epoch, 
             validation_data=datagen.flow(x_test, y_test, batch_size=batch_size))
-  model.save('result/model_1.h5')
+  model.save('result/model.h5')
 
 def test_cnn():
-  model = load_model('result/model_1.h5')
+  model = load_model('result/model.h5')
   img = image.load_img("data/jinkim.png", color_mode = "grayscale", target_size=(48, 48))
   x = image.img_to_array(img)
   x = np.expand_dims(x, axis = 0)
