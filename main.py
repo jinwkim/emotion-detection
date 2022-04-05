@@ -6,7 +6,7 @@ import numpy as np
 import cv2
 
 # Load existing model
-model = load_model('result/model_2.h5')
+model = load_model('result/model.h5')
 emotions = ['angry', 'disgust', 'fear', 'happy', 'sad', 'surprise', 'neutral']
 
 # Initiate video capture using webcam
