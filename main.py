@@ -6,7 +6,7 @@ import numpy as np
 import cv2
 
 # Load existing model
-model = load_model('result/model.h5')
+model = load_model('models/omar178.h5')
 emotions = ['angry', 'disgust', 'fear', 'happy', 'sad', 'surprise', 'neutral']
 
 # Initiate video capture using webcam
@@ -38,7 +38,7 @@ while camera.isOpened():
 	# dim = (width, height)
 	# # resize image using INTER_AREA for interpolation
 	# frame = cv2.resize(frame, dim, interpolation = cv2.INTER_AREA)
-	resized = cv2.resize(frame, (48,48))
+	resized = cv2.resize(frame, (64,64))
 	gray = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
 
 	if counter % 60 == 0: # 30 fps

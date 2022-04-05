@@ -22,6 +22,9 @@ Download fer2013.csv from https://gitlab.com/andwong/mp4_data/-/tree/master/kagg
 Create a new folder called "result"
 Run "python face-emotion.py" to generate model.h5 inside result folder
 
+model from https://github.com/omar178/Emotion-recognition
+Accuracy 66%
+
 ### To run the code
 python main.py
 
