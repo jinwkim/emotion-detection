@@ -24,6 +24,8 @@ print("Socket Accepted")
 counter = 0
 model = load_model('models/omar178.h5') # load pre-trained model
 emotions = ['angry', 'disgust', 'fear', 'happy', 'sad', 'surprise', 'neutral']
+neg_count, pos_count = 0,0
+negative_emotions = {'angry','disgust','fear','sad'}
 
 while True:
 	try:
@@ -55,6 +57,10 @@ while True:
 			# s = "'angry' {0}, 'disgust' {1}, 'fear' {2}, 'happy' {3}, 'sad' {4}, 'surprise' {5}, 'neutral' {6}"
 			# print(s.format(*pred_vals))
 			# print("Detected emotion: ", emotions[np.argmax(pred_vals)])
+			if detected_emotion in negative_emotions:
+				neg_count += 1
+			else:
+				pos_count += 1
 		counter += 1
 
 		# Show the incoming video from transmitter.py
@@ -62,8 +68,12 @@ while True:
 					cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 1)
 		cv2.imshow("RECEIVING VIDEO",frame)
 
-		# Show notification
-		displayNotification(message="Your patient is here", title="Your Patient Needs Your Attention")
+		# Show notification if negative emotions persist
+		if counter % 300 == 0:
+			if neg_count >= pos_count:
+				displayNotification(message="Your patient is experiencing negative emotions. Please attend to them right away", 
+									title="Your Patient Needs Your Attention")
+			neg_count, pos_count = 0,0
 
 		# If "q" is pressed, break
 		key = cv2.waitKey(1) & 0xFF
