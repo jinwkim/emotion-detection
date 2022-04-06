@@ -8,7 +8,7 @@ CHUNK = 1024
 FORMAT = pyaudio.paInt16 #paInt8
 CHANNELS = 1 # Macbook supports 1 channel
 RATE = 44100 #sample rate
-RECORD_SECONDS = 4
+RECORD_SECONDS = 5
 WAVE_OUTPUT_FILENAME = "../data/output10.wav"
 
 p = pyaudio.PyAudio()

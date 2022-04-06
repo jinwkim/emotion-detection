@@ -16,14 +16,14 @@ from keras.layers import Dense, Embedding
 from keras.layers import LSTM
 from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
-from keras.utils import to_categorical
+# from keras.utils import to_categorical
 from keras.layers import Input, Flatten, Dropout, Activation
 from keras.layers import Conv1D, MaxPooling1D, AveragePooling1D
 from keras.models import Model
 from keras.callbacks import ModelCheckpoint
 from sklearn.metrics import confusion_matrix
 
-emotions = ['calm', 'fearful', 'happy', 'calm', 'fearful', 'angry', 'happy']
+emotions = ['calm', 'sad', 'fearful', 'calm', 'fearful', 'happy', 'calm', 'fearful', 'angry', 'happy']
 
 data, sampling_rate = librosa.load('../data/output10.wav')
 
@@ -48,4 +48,6 @@ livepreds = model.predict(twodim,
                          verbose=1)
 livepreds1=livepreds.argmax(axis=1)
 liveabc = livepreds1.astype(int).flatten()
+# print("liveabc: ", liveabc)
 detected_emotion = emotions[liveabc[0]]
+print("detected emotion: ", detected_emotion)

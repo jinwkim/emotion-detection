@@ -69,7 +69,7 @@ while True:
 		cv2.imshow("RECEIVING VIDEO",frame)
 
 		# Show notification if negative emotions persist
-		if counter % 300 == 0:
+		if counter % 210 == 0:
 			if neg_count >= pos_count:
 				displayNotification(message="Your patient is experiencing negative emotions. Please attend to them right away", 
 									title="Your Patient Needs Your Attention")
