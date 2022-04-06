@@ -4,7 +4,7 @@ import cv2
 import pickle
 import struct
 
-
+# Set up socket to transmit data to receiver (physician)
 server_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 host_name  = socket.gethostname()
 host_ip = socket.gethostbyname(host_name)
@@ -20,6 +20,7 @@ print("LISTENING AT:",socket_address)
 client_socket,addr = server_socket.accept()
 print('GOT CONNECTION FROM:',addr)
 
+# Initialize camera for video capture
 vid = cv2.VideoCapture(0)
 
 while client_socket and vid.isOpened():
@@ -29,12 +30,16 @@ while client_socket and vid.isOpened():
         message = struct.pack("Q",len(a))+a
         client_socket.sendall(message)
         
-
-        cv2.imshow('TRANSMITTING VIDEO',frame)
+        cv2.imshow('TRANSMITTING VIDEO TO RECEIVER', frame)
         
         key = cv2.waitKey(1) & 0xFF
         if key ==ord('q'):
             break
     except:
-        print("error has occured in transmitter")
+        print("error in transmitter.py")
+        client_socket.close()
+        vid.release()
+        cv2.destroyAllWindows()
 client_socket.close()
+vid.release()
+cv2.destroyAllWindows()

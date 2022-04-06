@@ -26,7 +26,8 @@ model from https://github.com/omar178/Emotion-recognition
 Accuracy 66%
 
 ### To run the code
-python main.py
+python transmitter.py - "patient"
+python receiver.py - "doctor"
 
 ### Dependencies
 opencv-python==4.5.5
