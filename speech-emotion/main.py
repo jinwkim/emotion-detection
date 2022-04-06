@@ -23,7 +23,7 @@ from keras.models import Model
 from keras.callbacks import ModelCheckpoint
 from sklearn.metrics import confusion_matrix
 
-emotions = ['calm', 'sad', 'fearful', 'calm', 'fearful', 'happy', 'calm', 'fearful', 'angry', 'happy']
+emotions = ['calm', 'fearful', 'happy', 'calm', 'fearful', 'angry', 'happy']
 
 data, sampling_rate = librosa.load('../data/output10.wav')
 
