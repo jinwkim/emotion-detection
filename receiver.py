@@ -25,7 +25,7 @@ counter = 0
 model = load_model('models/omar178.h5') # load pre-trained model
 emotions = ['angry', 'disgust', 'fear', 'happy', 'sad', 'surprise', 'neutral']
 neg_count, pos_count = 0,0
-negative_emotions = {'angry','disgust','fear','sad'}
+negative_emotions = {'angry','disgust','fear','sad','surprise'}
 
 while True:
 	try:
@@ -68,10 +68,10 @@ while True:
 					cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 1)
 		cv2.imshow("RECEIVING VIDEO",frame)
 
-		# Show notification if negative emotions persist
-		if counter % 210 == 0:
+		# Show notification if negative emotions persist for 5 seconds (150/30)
+		if counter % 60 == 0:
 			if neg_count >= pos_count:
-				displayNotification(message="Your patient is experiencing negative emotions. Please attend to them right away", 
+				displayNotification(message="Your patient may be experiencing negative emotions. Please attend to them right away", 
 									title="Your Patient Needs Your Attention")
 			neg_count, pos_count = 0,0
 
