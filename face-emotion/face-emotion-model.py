@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 num_classes = 7 #angry, disgust, fear, happy, sad, surprise, neutral
 batch_size = 256
 steps_per_epoch = 112
-epochs = 9
+epochs = 11
 emotions = ['angry', 'disgust', 'fear', 'happy', 'sad', 'surprise', 'neutral']
 
 def plot_emotion_prediction(pred):
@@ -75,24 +75,30 @@ def create_model():
   return Model(inputs=inputs, outputs=pred)
 
 def cnn():
-  x_train, y_train, x_test, y_test = split_data() # comment out to speed up
+  x_train, y_train, x_test, y_test = split_data()
   model = create_model()
+
   # C. 1) DATA BATCH PROCESS
   datagen = ImageDataGenerator()
+
   # C. 2) COMPILE MODEL
   model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['acc'])
+
   # C. 3) TRAIN AND SAVE MODEL
   model.fit(datagen.flow(x_train, y_train, batch_size=batch_size), epochs=epochs, steps_per_epoch=steps_per_epoch, 
             validation_data=datagen.flow(x_test, y_test, batch_size=batch_size))
-  model.save('../result/model.h5')
+  model.save('../models/model.h5')
 
 def test_cnn():
-  model = load_model('../result/model.h5')
+  model = load_model('../models/model.h5')
+  x_train, y_train, x_test, y_test = split_data()
+  model.evaluate(x_test, y_test)
   img = image.load_img("../data/jinkim.png", color_mode = "grayscale", target_size=(48, 48))
   x = image.img_to_array(img)
   x = np.expand_dims(x, axis = 0)
   x /= 255
   custom = model.predict(x)
+  print("Emotion detected: ", custom)
 
 # x_train, y_train, x_test, y_test = split_data()
 create_model()
