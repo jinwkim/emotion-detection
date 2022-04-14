@@ -11,10 +11,14 @@ import matplotlib
 import matplotlib.pyplot as plt
 
 num_classes = 7 #angry, disgust, fear, happy, sad, surprise, neutral
+num_buckets = 2
 batch_size = 256
 steps_per_epoch = 112
 epochs = 11
 emotions = ['angry', 'disgust', 'fear', 'happy', 'sad', 'surprise', 'neutral']
+buckets = ['negative', 'nonnegative']
+map_to_bucket = {'0':'0', '1':'0', '2':'0', 
+                    '3':'1', '4':'0', '5':'0', '6':'1'}
 
 def plot_emotion_prediction(pred):
     """
@@ -39,7 +43,7 @@ def split_data():
       emotion, img, usage = lines[i].split(",")
       val = img.split(" ")
       pixels = np.array(val, 'float32')
-      emotion = keras.utils.np_utils.to_categorical(emotion, num_classes)
+      emotion = keras.utils.np_utils.to_categorical(map_to_bucket[emotion], num_buckets) # num_classes
       if 'Training' in usage:
           y_train.append(emotion)
           x_train.append(pixels)
@@ -51,7 +55,7 @@ def split_data():
   x_train, x_test = np.true_divide(x_train, 255.0), np.true_divide(x_test, 255.0)
   # A. 3) RESHAPE DATA
   x_train, x_test = x_train.reshape( (len(x_train),48,48,1) ), x_test.reshape( (len(x_test),48,48,1) )
-  # print("x_train, y_train, x_test, y_test: ",x_train.shape, y_train.shape, x_test.shape, y_test.shape)
+  print("x_train, y_train, x_test, y_test: ",x_train.shape, y_train.shape, x_test.shape, y_test.shape)
   return x_train, y_train, x_test, y_test
 
 def create_model():
@@ -71,7 +75,7 @@ def create_model():
   dropout = Dropout(0.4)(pool)
   flatten = Flatten()(dropout) # need to flatten into 1-D array before dense
   dense = Dense(1024, activation='relu')(flatten)
-  pred = Dense(7, activation='softmax')(dense)
+  pred = Dense(2, activation='softmax')(dense)
   return Model(inputs=inputs, outputs=pred)
 
 def cnn():
@@ -101,6 +105,6 @@ def test_cnn():
   print("Emotion detected: ", custom)
 
 # x_train, y_train, x_test, y_test = split_data()
-create_model()
+# create_model()
 cnn()
 test_cnn()
