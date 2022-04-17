@@ -1,2 +1,5 @@
 data/
 emotion-recognition-using-speech/
+speech-emotion/Predict-Record-Audio.wav
+speech-emotion/output.wav
+speech-emotion/TESS Toronto emotional speech set data
