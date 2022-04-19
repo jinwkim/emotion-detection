@@ -173,7 +173,13 @@ while True:
 			max_emo = np.argmax(predictions)
 			emotion_level = map_to_bucket[str(max_emo)]
 			print(emotion_level)
+			max_emotion = speech_emotions.get(max_emo,-1))
 			print('max emotion:', speech_emotions.get(max_emo,-1))
+
+			if max_emotion in negative_emotions:
+				neg_count += 1
+			else:
+				pos_count += 1
 
 			speech_frames = []
 
