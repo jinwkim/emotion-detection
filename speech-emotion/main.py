@@ -14,6 +14,9 @@ from keras.models import load_model
 
 import matplotlib.pyplot as plt
 
+map_to_bucket = {'0':'0', '1':'0', '2':'0', 
+                    '3':'1', '4':'1', '5':'1', '6':'1'}
+
 saved_model_path = 'model8723.json'
 saved_weights_path = 'model8723_weights.h5'
 
@@ -29,6 +32,8 @@ model.load_weights(saved_weights_path)
 model.compile(loss='categorical_crossentropy', 
                 optimizer='RMSProp', 
                 metrics=['categorical_accuracy'])
+
+model.save('../models/speech_emotion.h5')
 
 print(model.summary())
 
@@ -126,6 +131,7 @@ while is_silent(data) == False:
         data = array('l', stream.read(CHUNK, exception_on_overflow = False)) 
         # data = array('l', stream.read(CHUNK))
         frames.append(data)
+        print(len(frames))
 
         wf = wave.open(WAVE_OUTPUT_FILE, 'wb')
         wf.setnchannels(CHANNELS)
@@ -143,12 +149,14 @@ while is_silent(data) == False:
     total_predictions.append(pred_np)
     
     # Present emotion distribution for a sequence (7.1 secs).
-    fig = plt.figure(figsize = (10, 2))
-    plt.bar(emo_list, pred_np, color = 'darkturquoise')
-    plt.ylabel("Probabilty (%)")
-    plt.show()
+    # fig = plt.figure(figsize = (10, 2))
+    # plt.bar(emo_list, pred_np, color = 'darkturquoise')
+    # plt.ylabel("Probabilty (%)")
+    # plt.show()
     
     max_emo = np.argmax(predictions)
+    emotion_level = map_to_bucket[str(max_emo)]
+    print(emotion_level)
     print('max emotion:', emotions.get(max_emo,-1))
     
     print(100*'-')
