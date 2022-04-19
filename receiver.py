@@ -51,6 +51,8 @@ neg_count_speech, pos_count_speech = 0,0
 negative_emotions = {'angry','disgust','fear','sad','surprise'}
 detected_emotion = 'neutral'
 
+max_emotion = "N/A"
+
 # Initialize variables
 RATE = 24414
 CHUNK = 512
@@ -152,7 +154,8 @@ while True:
 
 
 		if (len(speech_frames) - 1) % timesteps == 0: 
-			print('here')
+			print('len(speech_frames): ',len(speech_frames))
+			print("timesteps: ", timesteps)
 			print('counter', counter)
 			speech_frames = speech_frames[:-1]
 			# x = preprocess(WAVE_OUTPUT_FILE) # 'output.wav' file preprocessing.
@@ -163,8 +166,8 @@ while True:
 				channels=CHANNELS
 			)
 			x = preprocess(audio_segment)
-			print('here2')
-			print(x.shape)
+			# print('here2')
+			# print(x.shape)
 			# Model's prediction => an 8 emotion probabilities array.
 			predictions = speech_model.predict(x, use_multiprocessing=True)
 			pred_list = list(predictions)
@@ -187,13 +190,17 @@ while True:
 		# Show the incoming video from transmitter.py
 		cv2.putText(frame, "Detected patient's emotion: "+detected_emotion, (20,30),
 					cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 1)
+		cv2.putText(frame, "Emotion from speech: "+max_emotion, (20,70),
+					cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 1)
 		cv2.imshow("RECEIVING VIDEO",frame)
 
 		# Show notification if negative emotions persist for 5 seconds (150/30)
-		if counter % 339 == 0:
-			cv2.putText(frame, "Emotion from speech: "+max_emotion, (70,30),
-					cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 1)
-			if neg_count_face >= pos_count_face and neg_count_speech >= pos_count_speech:
+		if counter % 338 == 0:
+			face_ratio = 1.0 * neg_count_face / (neg_count_face + pos_count_face)
+			speech_ratio = 1.0 * neg_count_speech / (neg_count_speech + pos_count_speech)
+			print("face_ratio: {}, speech_ratio: {}".format(face_ratio, speech_ratio))
+			# if neg_count_face >= pos_count_face or neg_count_speech >= pos_count_speech:
+			if face_ratio*0.7 + speech_ratio*0.3 >= 0.45:
 				displayNotification(message="Your patient may be experiencing negative emotions. Please attend to them right away", 
 									title="Your Patient Needs Your Attention")
 			neg_count_face, neg_count_speech, pos_count_face, pos_count_speech = 0,0,0,0
