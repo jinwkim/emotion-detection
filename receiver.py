@@ -46,7 +46,8 @@ speech_emotions = {
 map_to_bucket = {'0':'0', '1':'0', '2':'0', 
                     '3':'1', '4':'1', '5':'1', '6':'1'}
 emotions = ['angry', 'disgust', 'fear', 'happy', 'sad', 'surprise', 'neutral']
-neg_count, pos_count = 0,0
+neg_count_face, pos_count_face = 0,0
+neg_count_speech, pos_count_speech = 0,0
 negative_emotions = {'angry','disgust','fear','sad','surprise'}
 detected_emotion = 'neutral'
 
@@ -145,9 +146,9 @@ while True:
 			# print(s.format(*pred_vals))
 			# print("Detected emotion: ", emotions[np.argmax(pred_vals)])
 			if detected_emotion in negative_emotions:
-				neg_count += 1
+				neg_count_face += 1
 			else:
-				pos_count += 1
+				pos_count_face += 1
 
 
 		if (len(speech_frames) - 1) % timesteps == 0: 
@@ -172,14 +173,14 @@ while True:
 			
 			max_emo = np.argmax(predictions)
 			emotion_level = map_to_bucket[str(max_emo)]
-			print(emotion_level)
+			print("Emotion level from speech: ", emotion_level)
 			max_emotion = speech_emotions.get(max_emo,-1)
 			print('max emotion:', speech_emotions.get(max_emo,-1))
 
 			if max_emotion in negative_emotions:
-				neg_count += 1
+				neg_count_speech += 1
 			else:
-				pos_count += 1
+				pos_count_speech += 1
 
 			speech_frames = []
 
@@ -189,11 +190,13 @@ while True:
 		cv2.imshow("RECEIVING VIDEO",frame)
 
 		# Show notification if negative emotions persist for 5 seconds (150/30)
-		if counter % 60 == 0:
-			if neg_count >= pos_count:
+		if counter % 339 == 0:
+			cv2.putText(frame, "Emotion from speech: "+max_emotion, (70,30),
+					cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 1)
+			if neg_count_face >= pos_count_face and neg_count_speech >= pos_count_speech:
 				displayNotification(message="Your patient may be experiencing negative emotions. Please attend to them right away", 
 									title="Your Patient Needs Your Attention")
-			neg_count, pos_count = 0,0
+			neg_count_face, neg_count_speech, pos_count_face, pos_count_speech = 0,0,0,0
 
 		# If "q" is pressed, break
 		key = cv2.waitKey(1) & 0xFF
