@@ -39,3 +39,6 @@ brew install portaudio --HEAD
 pip install pyaudio --global-option="build_ext" --global-option="-I/opt/homebrew/include" --global-option="-L/opt/homebrew/lib"
 conda install llvmlite
 conda install -c conda-forge librosa
+
+pip install pydub
+pip install noisereduce
