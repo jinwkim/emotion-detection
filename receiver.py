@@ -202,7 +202,7 @@ while True:
 			# if neg_count_face >= pos_count_face or neg_count_speech >= pos_count_speech:
 			if face_ratio*0.7 + speech_ratio*0.3 >= 0.45:
 				displayNotification(message="Your patient may be experiencing negative emotions. Please attend to them right away", 
-									title="Your Patient Needs Your Attention")
+									title="Patient Needs Your Attention")
 			neg_count_face, neg_count_speech, pos_count_face, pos_count_speech = 0,0,0,0
 
 		# If "q" is pressed, break
