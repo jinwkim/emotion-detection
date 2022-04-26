@@ -188,7 +188,7 @@ while True:
 			speech_frames = []
 
 		# Show the incoming video from transmitter.py
-		cv2.putText(frame, "Detected patient's emotion: "+detected_emotion, (20,30),
+		cv2.putText(frame, "Emotion from facial expressions: "+detected_emotion, (20,30),
 					cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 1)
 		cv2.putText(frame, "Emotion from speech: "+max_emotion, (20,70),
 					cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 1)
