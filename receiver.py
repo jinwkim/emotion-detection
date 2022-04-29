@@ -20,6 +20,8 @@ import pyaudio
 from notification import displayNotification
 import asyncio
 
+import dlib
+
 client_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 host_ip = '127.0.0.1' 
 port = 1234
@@ -48,10 +50,13 @@ map_to_bucket = {'0':'0', '1':'0', '2':'0',
 emotions = ['angry', 'disgust', 'fear', 'happy', 'sad', 'surprise', 'neutral']
 neg_count_face, pos_count_face = 0,0
 neg_count_speech, pos_count_speech = 0,0
-negative_emotions = {'angry','disgust','fear','sad','surprise'}
-detected_emotion = 'neutral'
+negative_emotions = {'angry','disgust','fear','sad', 'fearful', 'surprise', 'surprised'}
 
-max_emotion = "N/A"
+emotion_face = 'neutral'
+emotion_speech = 'N/A'
+
+# boolean to see if face detected
+face_detected = False
 
 # Initialize variables
 RATE = 24414
@@ -108,14 +113,6 @@ print(timesteps)
 
 while True:
 	try:
-		print("* recording...")
-
-		speech_data = array('l', stream.read(CHUNK, exception_on_overflow = False)) 
-		speech_frames.append(speech_data)
-		speech_frames.append(speech_data)
-		speech_frames.append(speech_data)
-		print('frames length', len(speech_frames))
-
 		while len(data) < payload_size:
 			packet = client_socket.recv(2160) 
 			if not packet: 
@@ -131,23 +128,48 @@ while True:
 		data  = data[msg_size:]
 		frame = pickle.loads(frame_data)
 
+		# If no face detected, skip to next iteration - save computing power
+		gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+		detector = dlib.get_frontal_face_detector()
+		faces_detected = detector(gray, 0)
+		if len(faces_detected) == 0:
+			print("No faces found, skipping to next iteration")
+			face_detected = False
+		else:
+			face_detected = True
+
 		# Detect emotion from incoming video stream
 		resized = cv2.resize(frame, (64,64))
 		gray = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
 
+		print("* recording speech...")
+
+		speech_data = array('l', stream.read(CHUNK, exception_on_overflow = False)) 
+		speech_frames.append(speech_data)
+		speech_frames.append(speech_data)
+		speech_frames.append(speech_data)
+		print('frames length', len(speech_frames))
+
 		counter += 1
 
 		if counter % 5 == 0: # 30 fps
-			img = gray
-			x = image.img_to_array(img)
-			x = np.expand_dims(x, axis = 0)
-			x /= 255
-			pred_vals = model.predict(x)[0] # [[0.09034569, 0.04079238, 0.13130878, 0.06450415, 0.44670576, 0.08373094, 0.14261228]]
-			detected_emotion = emotions[np.argmax(pred_vals)]
-			# s = "'angry' {0}, 'disgust' {1}, 'fear' {2}, 'happy' {3}, 'sad' {4}, 'surprise' {5}, 'neutral' {6}"
-			# print(s.format(*pred_vals))
-			# print("Detected emotion: ", emotions[np.argmax(pred_vals)])
-			if detected_emotion in negative_emotions:
+			# check if face was detected
+			if face_detected:
+				img = gray
+				x = image.img_to_array(img)
+				x = np.expand_dims(x, axis = 0)
+				x /= 255
+				pred_vals = model.predict(x)[0] # [[0.09034569, 0.04079238, 0.13130878, 0.06450415, 0.44670576, 0.08373094, 0.14261228]]
+				emotion_face = emotions[np.argmax(pred_vals)]
+				# s = "'angry' {0}, 'disgust' {1}, 'fear' {2}, 'happy' {3}, 'sad' {4}, 'surprise' {5}, 'neutral' {6}"
+				# print(s.format(*pred_vals))
+				# print("Detected emotion: ", emotions[np.argmax(pred_vals)])
+			else:
+				emotion_face = 'neutral' # if face not detected, default to 'neutral'
+
+			print("detected facial emotion: ", emotion_face)
+
+			if emotion_face in negative_emotions:
 				neg_count_face += 1
 			else:
 				pos_count_face += 1
@@ -176,31 +198,26 @@ while True:
 			
 			max_emo = np.argmax(predictions)
 			emotion_level = map_to_bucket[str(max_emo)]
-			print("Emotion level from speech: ", emotion_level)
-			max_emotion = speech_emotions.get(max_emo,-1)
-			print('max emotion:', speech_emotions.get(max_emo,-1))
-
-			if max_emotion in negative_emotions:
-				neg_count_speech += 1
-			else:
-				pos_count_speech += 1
+			# print("Emotion level from speech: ", emotion_level)
+			emotion_speech = speech_emotions.get(max_emo,-1)
+			print('Emotion from speech:', emotion_speech)
 
 			speech_frames = []
 
 		# Show the incoming video from transmitter.py
-		cv2.putText(frame, "Emotion from facial expressions: "+detected_emotion, (20,30),
-					cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 1)
-		cv2.putText(frame, "Emotion from speech: "+max_emotion, (20,70),
-					cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 1)
+		# cv2.putText(frame, "Emotion from facial expressions: " + emotion_face, (20,30),
+		# 			cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 1)
+		# cv2.putText(frame, "Emotion from speech: " + emotion_speech, (20,70),
+		# 			cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 1)
 		cv2.imshow("RECEIVING VIDEO",frame)
 
 		# Show notification if negative emotions persist for 5 seconds (150/30)
 		if counter % 338 == 0:
 			face_ratio = 1.0 * neg_count_face / (neg_count_face + pos_count_face)
-			speech_ratio = 1.0 * neg_count_speech / (neg_count_speech + pos_count_speech)
-			print("face_ratio: {}, speech_ratio: {}".format(face_ratio, speech_ratio))
-			# if neg_count_face >= pos_count_face or neg_count_speech >= pos_count_speech:
-			if face_ratio*0.7 + speech_ratio*0.3 >= 0.45:
+			
+			print("face_ratio: {}, emotion_speech: {}".format(face_ratio, emotion_speech))
+			
+			if face_ratio >= 0.45 or emotion_face in negative_emotions:
 				displayNotification(message="Your patient may be experiencing negative emotions. Please attend to them right away", 
 									title="Patient Needs Your Attention")
 			neg_count_face, neg_count_speech, pos_count_face, pos_count_speech = 0,0,0,0
@@ -218,6 +235,7 @@ while True:
 		stream.close()
 		p.terminate()
 		# wf.close()
+
 stream.stop_stream()
 stream.close()
 p.terminate()

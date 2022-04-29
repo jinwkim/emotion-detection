@@ -6,8 +6,11 @@ import numpy as np
 import cv2
 
 # Load existing model
-model = load_model('models/omar178.h5')
-emotions = ['angry', 'disgust', 'fear', 'happy', 'sad', 'surprise', 'neutral']
+# model = load_model('models/omar178.h5')
+# emotions = ['angry', 'disgust', 'fear', 'happy', 'sad', 'surprise', 'neutral']
+
+model = load_model('../models/model.h5')
+emotions = ['negative', 'nonnegative']
 
 # Initiate video capture using webcam
 print("Starting up the webcam...")
@@ -38,7 +41,7 @@ while camera.isOpened():
 	# dim = (width, height)
 	# # resize image using INTER_AREA for interpolation
 	# frame = cv2.resize(frame, dim, interpolation = cv2.INTER_AREA)
-	resized = cv2.resize(frame, (64,64))
+	resized = cv2.resize(frame, (48,48))
 	gray = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
 
 	if counter % 60 == 0: # 30 fps
@@ -47,6 +50,7 @@ while camera.isOpened():
 		x = np.expand_dims(x, axis = 0)
 		x /= 255
 		pred_vals = model.predict(x)[0] # [[0.09034569, 0.04079238, 0.13130878, 0.06450415, 0.44670576, 0.08373094, 0.14261228]]
+		print("pred_vals: ", pred_vals)
 		detected_emotion = emotions[np.argmax(pred_vals)]
 		# s = "'angry' {0}, 'disgust' {1}, 'fear' {2}, 'happy' {3}, 'sad' {4}, 'surprise' {5}, 'neutral' {6}"
 		# print(s.format(*pred_vals))

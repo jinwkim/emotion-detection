@@ -42,3 +42,7 @@ conda install -c conda-forge librosa
 
 pip install pydub
 pip install noisereduce
+
+### For face detector
+conda install cmake
+pip install dlib
