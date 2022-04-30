@@ -21,6 +21,7 @@ from notification import displayNotification
 import asyncio
 
 import dlib
+from datetime import datetime
 
 client_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 host_ip = '127.0.0.1' 
@@ -75,6 +76,10 @@ stream = p.open(format=FORMAT,
                 input=True,
                 frames_per_buffer=CHUNK)
 
+file_name = datetime.now()
+file_name = str(file_name)+".txt"
+file = open(file_name,"x")
+file.close()
 
 def preprocess(file_path, frame_length = 2048, hop_length = 512):
     '''
@@ -216,12 +221,16 @@ while True:
 			face_ratio = 1.0 * neg_count_face / (neg_count_face + pos_count_face)
 			
 			print("face_ratio: {}, emotion_speech: {}".format(face_ratio, emotion_speech))
-			
-			if face_ratio >= 0.45 or emotion_face in negative_emotions:
+
+			if face_ratio >= 0.5 or emotion_speech in negative_emotions:
 				displayNotification(message="Your patient may be experiencing negative emotions. Please attend to them right away", 
 									title="Patient Needs Your Attention")
+				file = open(file_name, "a")
+				now = datetime.now()
+				file.write(str(now)+",emotion_face,"+emotion_face+",emotion_speech,"+emotion_speech+",alert\n")
+				file.close()
 			neg_count_face, neg_count_speech, pos_count_face, pos_count_speech = 0,0,0,0
-
+			
 		# If "q" is pressed, break
 		key = cv2.waitKey(1) & 0xFF
 		if key  == ord('q'):
@@ -229,6 +238,7 @@ while True:
 	except Exception as err:
 		print(err)
 		print("error in receiver.py")
+		file.close()
 		client_socket.close()
 		cv2.destroyAllWindows()
 		stream.stop_stream()
@@ -238,6 +248,7 @@ while True:
 
 stream.stop_stream()
 stream.close()
+file.close()
 p.terminate()
 # wf.close()
 client_socket.close()

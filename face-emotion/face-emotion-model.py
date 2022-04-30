@@ -4,7 +4,6 @@ from keras.preprocessing.image import ImageDataGenerator
 from keras.models import Model, load_model
 from keras.layers import Input, Dense, Dropout, Flatten, Conv2D, MaxPooling2D
 import numpy as np
-import matplotlib.pyplot as plt
 
 num_buckets = 2
 batch_size = 256
@@ -14,18 +13,6 @@ emotions = ['angry', 'disgust', 'fear', 'happy', 'sad', 'surprise', 'neutral']
 buckets = ['negative', 'nonnegative'] # 0: negative, 1: nonnegative
 map_to_bucket = {'0':'0', '1':'0', '2':'0', 
                     '3':'1', '4':'0', '5':'0', '6':'1'}
-
-def plot_emotion_prediction(pred):
-    """
-    Plots the prediction for each emotion on a bar chart
-    :param pred: the predictions for each emotions
-    """
-    labels = np.arange(len(emotions))
-    plt.bar(labels, pred, align='center', alpha=0.5)
-    plt.xticks(labels, emotions)
-    plt.ylabel('prediction')
-    plt.title('emotion')
-    plt.show()
 
 def split_data():
   # Import fer2013.csv
