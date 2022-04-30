@@ -33,8 +33,10 @@ print("Socket Accepted")
 
 # Initialize for emotion detection from face
 counter = 0
-model = load_model('models/omar178.h5') # load pre-trained model
+# load pre-trained model
+model = load_model('models/omar178.h5') 
 speech_model = load_model('models/speech_emotion.h5')
+# map classification number to emotion name
 speech_emotions = {
     0 : 'neutral',
     1 : 'calm',
@@ -45,11 +47,11 @@ speech_emotions = {
     6 : 'disgust',
     7 : 'suprised'   
 }
-map_to_bucket = {'0':'0', '1':'0', '2':'0', 
-                    '3':'1', '4':'1', '5':'1', '6':'1'}
+
 emotions = ['angry', 'disgust', 'fear', 'happy', 'sad', 'surprise', 'neutral']
-neg_count_face, pos_count_face = 0,0
-neg_count_speech, pos_count_speech = 0,0
+
+neg_count_face, pos_count_face = 0, 0
+neg_count_speech, pos_count_speech = 0, 0
 negative_emotions = {'angry','disgust','fear','sad', 'fearful', 'surprise', 'surprised'}
 
 emotion_face = 'neutral'
@@ -58,14 +60,11 @@ emotion_speech = 'N/A'
 # boolean to see if face detected
 face_detected = False
 
-# Initialize variables
 RATE = 24414
 CHUNK = 512
 RECORD_SECONDS = 7.1
-
 FORMAT = pyaudio.paInt32
-CHANNELS = 1
-WAVE_OUTPUT_FILE = "data/output.wav"
+CHANNELS = 1 # Macbook supports 1 channel
 
 # Open an input channel
 p = pyaudio.PyAudio()
@@ -76,34 +75,23 @@ stream = p.open(format=FORMAT,
                 frames_per_buffer=CHUNK)
 
 
-def preprocess(file_path, frame_length = 2048, hop_length = 512):
-    '''
-    A process to an audio .wav file before execcuting a prediction.
-      Arguments:
-      - file_path - The system path to the audio file.
-      - frame_length - Length of the frame over which to compute the speech features. default: 2048
-      - hop_length - Number of samples to advance for each frame. default: 512
+def preprocess(audio_segment):
+	# normalize sound
+	sound = effects.normalize(audio_segment, headroom = 5.0)
+	x = np.array(sound.get_array_of_samples(), dtype = 'float32')
+	# reduce noise
+	x = nr.reduce_noise(x, sr = RATE)
 
-      Return:
-        'X_3D' variable, containing a shape of: (batch, timesteps, feature) for a single file (batch = 1).
-    ''' 
-    rawsound = file_path; sr = RATE 
-    # Normalize to 5 dBFS 
-    normalizedsound = effects.normalize(rawsound, headroom = 5.0) 
-    # Transform the audio file to np.array of samples
-    normal_x = np.array(normalizedsound.get_array_of_samples(), dtype = 'float32') 
-    # Noise reduction                  
-    final_x = nr.reduce_noise(normal_x, sr=sr)
-        
-        
-    f1 = librosa.feature.rms(y=final_x, frame_length=frame_length, hop_length=hop_length, center=True, pad_mode='reflect').T # Energy - Root Mean Square
-    f2 = librosa.feature.zero_crossing_rate(final_x, frame_length=frame_length, hop_length=hop_length,center=True).T # ZCR
-    f3 = librosa.feature.mfcc(y=final_x, sr=sr, S=None, n_mfcc=13, hop_length = hop_length).T # MFCC   
-    X = np.concatenate((f1, f2, f3), axis = 1)
-    
-    X_3D = np.expand_dims(X, axis=0)
-    
-    return X_3D
+	# features extraction 
+    # root-mean-square (RMS) value for each frame
+	rms_x = librosa.feature.rms(y = x, pad_mode = 'reflect').T   
+	# zero-crossing rate of an audio time series
+	zcr_x = librosa.feature.zero_crossing_rate(x).T   
+	# Mel-frequency cepstral coefficients
+	mfcc_x = librosa.feature.mfcc(y = x, sr = RATE, n_mfcc = 13, hop_length = 512).T
+	x = np.concatenate((rms_x, zcr_x, mfcc_x), axis = 1)
+
+	return np.expand_dims(x, axis = 0) # format: (batch, timesteps, feature)
 
 # Initialize a non-silent signals array to state "True" in the first 'while' iteration.
 speech_data = array('h', np.random.randint(size = 512, low = 0, high = 500))
@@ -145,6 +133,7 @@ while True:
 		print("* recording speech...")
 
 		speech_data = array('l', stream.read(CHUNK, exception_on_overflow = False)) 
+		# adding three frames at a time to make speech recognition faster
 		speech_frames.append(speech_data)
 		speech_frames.append(speech_data)
 		speech_frames.append(speech_data)
@@ -176,11 +165,7 @@ while True:
 
 
 		if (len(speech_frames) - 1) % timesteps == 0: 
-			print('len(speech_frames): ',len(speech_frames))
-			print("timesteps: ", timesteps)
-			print('counter', counter)
 			speech_frames = speech_frames[:-1]
-			# x = preprocess(WAVE_OUTPUT_FILE) # 'output.wav' file preprocessing.
 			audio_segment = AudioSegment(
 				b''.join(speech_frames), 
 				frame_rate=RATE,
@@ -188,18 +173,8 @@ while True:
 				channels=CHANNELS
 			)
 			x = preprocess(audio_segment)
-			# print('here2')
-			# print(x.shape)
-			# Model's prediction => an 8 emotion probabilities array.
-			predictions = speech_model.predict(x, use_multiprocessing=True)
-			pred_list = list(predictions)
-			pred_np = np.squeeze(np.array(pred_list).tolist(), axis=0) # Get rid of 'array' & 'dtype' statments.
-			
-			
-			max_emo = np.argmax(predictions)
-			emotion_level = map_to_bucket[str(max_emo)]
-			# print("Emotion level from speech: ", emotion_level)
-			emotion_speech = speech_emotions.get(max_emo,-1)
+			preds = list(speech_model.predict(x, use_multiprocessing=True))
+			emotion_speech = speech_emotions[np.argmax(preds)]
 			print('Emotion from speech:', emotion_speech)
 
 			speech_frames = []
@@ -220,7 +195,7 @@ while True:
 			if face_ratio >= 0.45 or emotion_face in negative_emotions:
 				displayNotification(message="Your patient may be experiencing negative emotions. Please attend to them right away", 
 									title="Patient Needs Your Attention")
-			neg_count_face, neg_count_speech, pos_count_face, pos_count_speech = 0,0,0,0
+			neg_count_face, neg_count_speech, pos_count_face, pos_count_speech = 0, 0, 0, 0
 
 		# If "q" is pressed, break
 		key = cv2.waitKey(1) & 0xFF

@@ -1,6 +1,3 @@
-import os
-from json_tricks import load
-
 import numpy as np
 
 import librosa
@@ -9,7 +6,6 @@ import noisereduce as nr
 
 import tensorflow as tf
 import keras
-from keras.models import model_from_json
 from keras.models import load_model
 
 import matplotlib.pyplot as plt
@@ -17,23 +13,7 @@ import matplotlib.pyplot as plt
 map_to_bucket = {'0':'0', '1':'0', '2':'0', 
                     '3':'1', '4':'1', '5':'1', '6':'1'}
 
-saved_model_path = 'model8723.json'
-saved_weights_path = 'model8723_weights.h5'
-
-#Reading the model from JSON file
-with open(saved_model_path, 'r') as json_file:
-    json_savedModel = json_file.read()
-    
-# Loading the model architecture, weights
-model = tf.keras.models.model_from_json(json_savedModel)
-model.load_weights(saved_weights_path)
-
-# Compiling the model with similar parameters as the original model.
-model.compile(loss='categorical_crossentropy', 
-                optimizer='RMSProp', 
-                metrics=['categorical_accuracy'])
-
-model.save('../models/speech_emotion.h5')
+model = load_model('../models/speech_emotion.h5')
 
 print(model.summary())
 
