@@ -35,7 +35,7 @@ print("Socket Accepted")
 # Initialize for emotion detection from face
 counter = 0
 # load pre-trained model
-model = load_model('models/omar178.h5') 
+model = load_model('models/face-emotion.h5')  # loss: 1.0510 - acc: 0.6041 - val_loss: 1.0856 - val_acc: 0.5904
 speech_model = load_model('models/speech_emotion.h5')
 # map classification number to emotion name
 speech_emotions = {
