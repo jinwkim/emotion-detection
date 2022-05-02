@@ -18,7 +18,7 @@ pip install matplotlib
 pip install scipy
 
 ### To create and train the model
-Download fer2013.csv from https://gitlab.com/andwong/mp4_data/-/tree/master/kaggle_fer2013 and put into a new folder called "data"
+Download fer2013.csv from https://gitlab.com/andwong/mp4_data/-/tree/master/kaggle_fer2013 and put into the folder called "face-emotion"
 Create a new folder called "result"
 Run "python face-emotion.py" to generate model.h5 inside result folder
 
