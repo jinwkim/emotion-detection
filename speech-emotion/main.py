@@ -4,53 +4,20 @@ import librosa
 from pydub import AudioSegment, effects
 import noisereduce as nr
 
-import tensorflow as tf
 import keras
 from keras.models import load_model
 
-import matplotlib.pyplot as plt
+import pyaudio
+import wave
+from array import array
 
-map_to_bucket = {'0':'0', '1':'0', '2':'0', 
-                    '3':'1', '4':'1', '5':'1', '6':'1'}
+# Initialize variables
+RATE = 24414
+CHUNK = 512
+RECORD_SECONDS = 7.1
 
-model = load_model('../models/speech_emotion.h5')
-
-print(model.summary())
-
-def preprocess(file_path, frame_length = 2048, hop_length = 512):
-    '''
-    A process to an audio .wav file before execcuting a prediction.
-      Arguments:
-      - file_path - The system path to the audio file.
-      - frame_length - Length of the frame over which to compute the speech features. default: 2048
-      - hop_length - Number of samples to advance for each frame. default: 512
-
-      Return:
-        'X_3D' variable, containing a shape of: (batch, timesteps, feature) for a single file (batch = 1).
-    ''' 
-    # Fetch sample rate.
-    _, sr = librosa.load(path = file_path, sr = None)
-    # Load audio file
-    rawsound = AudioSegment.from_file(file_path, duration = None) 
-    # Normalize to 5 dBFS 
-    normalizedsound = effects.normalize(rawsound, headroom = 5.0) 
-    # Transform the audio file to np.array of samples
-    normal_x = np.array(normalizedsound.get_array_of_samples(), dtype = 'float32') 
-    # Noise reduction                  
-    final_x = nr.reduce_noise(normal_x, sr=sr)
-        
-        
-    f1 = librosa.feature.rms(y=final_x, frame_length=frame_length, hop_length=hop_length, center=True, pad_mode='reflect').T # Energy - Root Mean Square
-    f2 = librosa.feature.zero_crossing_rate(final_x, frame_length=frame_length, hop_length=hop_length,center=True).T # ZCR
-    f3 = librosa.feature.mfcc(y=final_x, sr=sr, S=None, n_mfcc=13, hop_length = hop_length).T # MFCC   
-    X = np.concatenate((f1, f2, f3), axis = 1)
-    
-    X_3D = np.expand_dims(X, axis=0)
-    
-    return X_3D
-
-# Emotions list is created for a readable form of the model prediction.
-
+FORMAT = pyaudio.paInt32
+CHANNELS = 1
 emotions = {
     0 : 'neutral',
     1 : 'calm',
@@ -61,26 +28,30 @@ emotions = {
     6 : 'disgust',
     7 : 'suprised'   
 }
-emo_list = list(emotions.values())
+map_to_bucket = {'0':'0', '1':'0', '2':'0', 
+                    '3':'1', '4':'1', '5':'1', '6':'1'}
 
-def is_silent(data):
-    # Returns 'True' if below the 'silent' threshold
-    return max(data) < 100
+model = load_model('../models/speech_emotion.h5')
 
-import pyaudio
-import wave
-from array import array
-import struct
-import time
+def preprocess(audio_segment):
+	# normalize sound
+	sound = effects.normalize(audio_segment, headroom = 5.0)
+	x = np.array(sound.get_array_of_samples(), dtype = 'float32')
+	# reduce noise
+	x = nr.reduce_noise(x, sr = RATE)
 
-# Initialize variables
-RATE = 24414
-CHUNK = 512
-RECORD_SECONDS = 7.1
+	# features extraction 
+    # root-mean-square (RMS) value for each frame
+	rms_x = librosa.feature.rms(y = x, pad_mode = 'reflect').T   
+	# zero-crossing rate of an audio time series
+	zcr_x = librosa.feature.zero_crossing_rate(x).T   
+	# Mel-frequency cepstral coefficients
+	mfcc_x = librosa.feature.mfcc(y = x, sr = RATE, n_mfcc = 13, hop_length = 512).T
+	x = np.concatenate((rms_x, zcr_x, mfcc_x), axis = 1)
 
-FORMAT = pyaudio.paInt32
-CHANNELS = 1
-WAVE_OUTPUT_FILE = "output.wav"
+	return np.expand_dims(x, axis = 0) # format: (batch, timesteps, feature)
+
+# Emotions list is created for a readable form of the model prediction.
 
 # Open an input channel
 p = pyaudio.PyAudio()
@@ -91,82 +62,36 @@ stream = p.open(format=FORMAT,
                 frames_per_buffer=CHUNK)
 
 
-# Initialize a non-silent signals array to state "True" in the first 'while' iteration.
+# initialize sound signals
 data = array('h', np.random.randint(size = 512, low = 0, high = 500))
+timesteps = int(RATE / CHUNK * RECORD_SECONDS) # => 339
 
-# SESSION START
-print("** session started")
-total_predictions = [] # A list for all predictions in the session.
-tic = time.perf_counter()
-
-while is_silent(data) == False:
-    print("* recording...")
+while True:
+    print("recording new chunk")
     frames = [] 
-    data = np.nan # Reset 'data' variable.
+    data = np.nan
 
-    timesteps = int(RATE / CHUNK * RECORD_SECONDS) # => 339
-
-    # Insert frames to 'output.wav'.
     for i in range(0, timesteps):
         data = array('l', stream.read(CHUNK, exception_on_overflow = False)) 
-        # data = array('l', stream.read(CHUNK))
         frames.append(data)
-        print(len(frames))
 
-        wf = wave.open(WAVE_OUTPUT_FILE, 'wb')
-        wf.setnchannels(CHANNELS)
-        wf.setsampwidth(p.get_sample_size(FORMAT))
-        wf.setframerate(RATE)
-        wf.writeframes(b''.join(frames))
+    print('frames collected')
+    audio_segment = AudioSegment(
+				b''.join(frames), 
+				frame_rate=RATE,
+				sample_width=p.get_sample_size(FORMAT), 
+				channels=CHANNELS
+	)
+    x = preprocess(audio_segment)
+    preds = list(model.predict(x, use_multiprocessing=True))
+    max_emotion = np.argmax(preds)
+    emotion_speech = emotions[max_emotion]
+    print('predicted emotion', emotion_speech)
+    if map_to_bucket[str(max_emotion)] == '1':
+        print('negative emotion detected')
 
-    print("* done recording")
-
-    x = preprocess(WAVE_OUTPUT_FILE) # 'output.wav' file preprocessing.
-    # Model's prediction => an 8 emotion probabilities array.
-    predictions = model.predict(x, use_multiprocessing=True)
-    pred_list = list(predictions)
-    pred_np = np.squeeze(np.array(pred_list).tolist(), axis=0) # Get rid of 'array' & 'dtype' statments.
-    total_predictions.append(pred_np)
     
-    # Present emotion distribution for a sequence (7.1 secs).
-    # fig = plt.figure(figsize = (10, 2))
-    # plt.bar(emo_list, pred_np, color = 'darkturquoise')
-    # plt.ylabel("Probabilty (%)")
-    # plt.show()
-    
-    max_emo = np.argmax(predictions)
-    emotion_level = map_to_bucket[str(max_emo)]
-    print(emotion_level)
-    print('max emotion:', emotions.get(max_emo,-1))
-    
-    print(100*'-')
-    
-    # Define the last 2 seconds sequence.
-    last_frames = np.array(struct.unpack(str(96 * CHUNK) + 'B' , np.stack(( frames[-1], frames[-2], frames[-3], frames[-4],
-                                                                            frames[-5], frames[-6], frames[-7], frames[-8],
-                                                                            frames[-9], frames[-10], frames[-11], frames[-12],
-                                                                            frames[-13], frames[-14], frames[-15], frames[-16],
-                                                                            frames[-17], frames[-18], frames[-19], frames[-20],
-                                                                            frames[-21], frames[-22], frames[-23], frames[-24]),
-                                                                            axis =0)) , dtype = 'b')
-    if is_silent(last_frames): # If the last 2 seconds are silent, end the session.
-        break
-
-# SESSION END        
-toc = time.perf_counter()
 stream.stop_stream()
 stream.close()
 p.terminate()
-wf.close()
-print('** session ended')
-
-# Present emotion distribution for the whole session.
-total_predictions_np =  np.mean(np.array(total_predictions).tolist(), axis=0)
-fig = plt.figure(figsize = (10, 5))
-plt.bar(emo_list, total_predictions_np, color = 'indigo')
-plt.ylabel("Mean probabilty (%)")
-plt.title("Session Summary")
-plt.show()
-
-print(f"Emotions analyzed for: {(toc - tic):0.4f} seconds")
 
