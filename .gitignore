@@ -1,6 +1,2 @@
-data/
-emotion-recognition-using-speech/
 __pycache__/
-speech-emotion/Predict-Record-Audio.wav
-speech-emotion/output.wav
-speech-emotion/TESS Toronto emotional speech set data
+face-emotion/fer2013.csv

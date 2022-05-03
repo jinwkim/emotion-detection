@@ -35,7 +35,7 @@ print("Socket Accepted")
 # Initialize for emotion detection from face
 counter = 0
 # load pre-trained model
-model = load_model('models/omar178.h5') 
+model = load_model('models/face-emotion.h5')  # loss: 1.0510 - acc: 0.6041 - val_loss: 1.0856 - val_acc: 0.5904
 speech_model = load_model('models/speech_emotion.h5')
 # map classification number to emotion name
 speech_emotions = {
@@ -121,18 +121,8 @@ while True:
 		data  = data[msg_size:]
 		frame = pickle.loads(frame_data)
 
-		# If no face detected, skip to next iteration - save computing power
-		gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-		detector = dlib.get_frontal_face_detector()
-		faces_detected = detector(gray, 0)
-		if len(faces_detected) == 0:
-			print("No faces found, skipping to next iteration")
-			face_detected = False
-		else:
-			face_detected = True
-
 		# Detect emotion from incoming video stream
-		resized = cv2.resize(frame, (64,64))
+		resized = cv2.resize(frame, (48,48))
 		gray = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
 
 		print("* recording speech...")
@@ -147,8 +137,14 @@ while True:
 		counter += 1
 
 		if counter % 5 == 0: # 30 fps
-			# check if face was detected
-			if face_detected:
+			# If no face detected, skip to next iteration - save computing power
+			gray_dlib = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+			detector = dlib.get_frontal_face_detector()
+			faces_detected = detector(gray_dlib, 0)
+			if len(faces_detected) == 0:
+				print("No faces found, defaulting to neutral")
+				emotion_face = 'neutral' # if face not detected, default to 'neutral'
+			else:
 				img = gray
 				x = image.img_to_array(img)
 				x = np.expand_dims(x, axis = 0)
@@ -158,8 +154,6 @@ while True:
 				# s = "'angry' {0}, 'disgust' {1}, 'fear' {2}, 'happy' {3}, 'sad' {4}, 'surprise' {5}, 'neutral' {6}"
 				# print(s.format(*pred_vals))
 				# print("Detected emotion: ", emotions[np.argmax(pred_vals)])
-			else:
-				emotion_face = 'neutral' # if face not detected, default to 'neutral'
 
 			print("detected facial emotion: ", emotion_face)
 

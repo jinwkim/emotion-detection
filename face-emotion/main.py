@@ -9,7 +9,7 @@ import cv2
 # model = load_model('models/omar178.h5')
 # emotions = ['angry', 'disgust', 'fear', 'happy', 'sad', 'surprise', 'neutral']
 
-model = load_model('../models/model.h5')
+model = load_model('../models/face-emotion.h5')
 emotions = ['negative', 'nonnegative']
 
 # Initiate video capture using webcam
