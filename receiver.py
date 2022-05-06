@@ -51,7 +51,7 @@ speech_emotions = {
 
 emotions = ['angry', 'disgust', 'fear', 'happy', 'sad', 'surprise', 'neutral']
 
-neg_count_face, pos_count_face = 0, 0
+neg_count_face, nonneg_count_face = 0, 0
 neg_count_speech, pos_count_speech = 0, 0
 negative_emotions = {'angry','disgust','fear','sad', 'fearful', 'surprise', 'surprised'}
 
@@ -143,7 +143,7 @@ while True:
 			faces_detected = detector(gray_dlib, 0)
 			if len(faces_detected) == 0:
 				print("No faces found, defaulting to neutral")
-				emotion_face = 'neutral' # if face not detected, default to 'neutral'
+				emotion_face = 'no-face-detected' # if face not detected, default to 'neutral'
 			else:
 				img = gray
 				x = image.img_to_array(img)
@@ -151,16 +151,15 @@ while True:
 				x /= 255
 				pred_vals = model.predict(x)[0] # [[0.09034569, 0.04079238, 0.13130878, 0.06450415, 0.44670576, 0.08373094, 0.14261228]]
 				emotion_face = emotions[np.argmax(pred_vals)]
-				# s = "'angry' {0}, 'disgust' {1}, 'fear' {2}, 'happy' {3}, 'sad' {4}, 'surprise' {5}, 'neutral' {6}"
-				# print(s.format(*pred_vals))
-				# print("Detected emotion: ", emotions[np.argmax(pred_vals)])
 
 			print("detected facial emotion: ", emotion_face)
 
-			if emotion_face in negative_emotions:
+			if emotion_face == 'no-face-detected':
+				continue
+			elif emotion_face in negative_emotions:
 				neg_count_face += 1
 			else:
-				pos_count_face += 1
+				nonneg_count_face += 1
 
 
 		if (len(speech_frames) - 1) % timesteps == 0: 
@@ -187,7 +186,7 @@ while True:
 
 		# Show notification if negative emotions persist for 5 seconds (150/30)
 		if counter % 338 == 0:
-			face_ratio = 1.0 * neg_count_face / (neg_count_face + pos_count_face)
+			face_ratio = 1.0 * neg_count_face / (neg_count_face + nonneg_count_face)
 			
 			print("face_ratio: {}, emotion_speech: {}".format(face_ratio, emotion_speech))
 
@@ -198,7 +197,7 @@ while True:
 				now = datetime.now()
 				file.write(str(now)+",emotion_face,"+emotion_face+",emotion_speech,"+emotion_speech+",alert\n")
 				file.close()
-			neg_count_face, neg_count_speech, pos_count_face, pos_count_speech = 0,0,0,0
+			neg_count_face, neg_count_speech, nonneg_count_face, pos_count_speech = 0,0,0,0
 			
 		# If "q" is pressed, break
 		key = cv2.waitKey(1) & 0xFF
