@@ -76,7 +76,7 @@ stream = p.open(format=FORMAT,
                 frames_per_buffer=CHUNK)
 
 file_name = datetime.now()
-file_name = str(file_name)+".txt"
+file_name = "log/"+str(file_name)+".csv"
 file = open(file_name,"x")
 file.close()
 
