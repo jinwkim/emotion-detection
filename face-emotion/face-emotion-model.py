@@ -5,15 +5,11 @@ from keras.models import Model, load_model
 from keras.layers import Input, Dense, Dropout, Flatten, Conv2D, MaxPooling2D
 import numpy as np
 
-num_buckets = 2
 num_emotions = 7
 batch_size = 256
 steps_per_epoch = 112
 epochs = 11
 emotions = ['angry', 'disgust', 'fear', 'happy', 'sad', 'surprise', 'neutral']
-buckets = ['negative', 'nonnegative'] # 0: negative, 1: nonnegative
-map_to_bucket = {'0':'0', '1':'0', '2':'0', 
-                    '3':'1', '4':'0', '5':'0', '6':'1'}
 
 def split_data():
   # Import fer2013.csv
@@ -28,7 +24,7 @@ def split_data():
       val = img.split(" ")
       pixels = np.array(val, 'float32')
       emotion = keras.utils.np_utils.to_categorical(emotion, num_emotions)
-      # emotion = keras.utils.np_utils.to_categorical(map_to_bucket[emotion], num_buckets)
+
       if 'Training' in usage:
           y_train.append(emotion)
           x_train.append(pixels)
@@ -44,27 +40,6 @@ def split_data():
   x_train, x_test = x_train.reshape( (len(x_train),48,48,1) ), x_test.reshape( (len(x_test),48,48,1) )
   print("x_train, y_train, x_test, y_test: ",x_train.shape, y_train.shape, x_test.shape, y_test.shape)
   return x_train, y_train, x_test, y_test
-
-# def create_model():
-#   inputs = Input(shape=(48, 48, 1, ))
-  
-#   # Use increasing number of filters in Conv2D
-#   conv = Conv2D(filters=32, kernel_size=(5,5), activation='relu')(inputs)
-#   conv = Conv2D(filters=32, kernel_size=(5,5), activation='relu')(conv)
-#   pool = MaxPooling2D(pool_size=(2,2))(conv)
-#   dropout = Dropout(0.2)(pool)
-#   conv = Conv2D(filters=64, kernel_size=(3,3), activation='relu')(dropout)
-#   conv = Conv2D(filters=64, kernel_size=(3,3), activation='relu')(conv)
-#   pool = MaxPooling2D(pool_size=(2,2))(conv)
-#   dropout = Dropout(0.2)(pool)
-#   conv = Conv2D(filters=128, kernel_size=(3,3), activation='relu')(dropout)
-#   conv = Conv2D(filters=128, kernel_size=(3,3), activation='relu')(conv)
-#   pool = MaxPooling2D(pool_size=(2,2))(conv)
-#   dropout = Dropout(0.4)(pool)
-#   flatten = Flatten()(dropout) # need to flatten into 1-D array before dense
-#   dense = Dense(1024, activation='relu')(flatten)
-#   pred = Dense(7, activation='softmax')(dense)
-#   return Model(inputs=inputs, outputs=pred)
 
 def create_model():
   inputs = Input(shape=(48, 48, 1, ))
@@ -107,12 +82,6 @@ def test_cnn():
   x_train, y_train, x_test, y_test = split_data()
   print("evaluating facial emotion recognition model")
   model.evaluate(x_test, y_test)
-  # img = image.load_img("../data/jinkim.png", color_mode = "grayscale", target_size=(64, 64))
-  # x = image.img_to_array(img)
-  # x = np.expand_dims(x, axis = 0)
-  # x /= 255
-  # custom = model.predict(x)
-  # print("Emotion detected: ", custom)
 
 cnn()
 test_cnn()
