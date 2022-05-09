@@ -39,18 +39,12 @@ model = Sequential()
 model.add(layers.LSTM(64, return_sequences = True, input_shape = (x.shape[1:3])))
 model.add(layers.LSTM(64))
 model.add(layers.Dense(8, activation = 'softmax'))
-print(model.summary())
-
-# reduce learning rate after 100 epochs without improvement.
-rlrop = callbacks.ReduceLROnPlateau(monitor='val_categorical_accuracy', 
-                                    factor=0.1, patience=100)
 
 model.compile(loss='categorical_crossentropy', optimizer='RMSProp', metrics=['categorical_accuracy'])
 
 model.fit(x_train, y_train_class, 
     epochs=340, batch_size = batch_size, 
-    validation_data = (x_val, y_val_class), 
-    callbacks = [rlrop])
+    validation_data = (x_val, y_val_class))
 
 model.save('../models/speech_emotion.h5')
 
