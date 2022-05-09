@@ -72,3 +72,10 @@ python face-emotion-model.py
 ```
 
 You can also modify the model being created by altering the "create_model()" method.
+
+For speech emotion recognition, all you need to do is go to the "speech-emotion" folder in your terminal. From there, you can run the following line of code that should generate a ".h5" model for speech emotion in the "models" directory:
+```python
+python speech-emotion-model.py
+```
+
+If you would like to create your own model with the TESS and RAVDESS data sets that were used, you can access the Numpy arrays that contains the features that were extracted and the emotions that they were classified with in the "data" subfolder in the "speech-emotion" folder.
